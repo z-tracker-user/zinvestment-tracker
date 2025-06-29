@@ -2,198 +2,96 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Z-investment Tracker</title>
+  <title>Z-Investment Tracker</title>
   <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <h1>Welcome to Z-Investment Tracker</h1>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+  <!-- Glitch Effect Heading -->
+  <h1 data-text="Welcome to Z-Investment Tracker">Welcome to Z-Investment Tracker</h1>
+  <p class="tagline">Feel the Speed of Your Investments</p>
+
+  <!-- Portfolio Section -->
   <div id="portfolio">
     <h2>Your Portfolio</h2>
 
-    <input type="text" id="stock-symbol" placeholder="Stock Symbol (e.g. AAPL)" required />
-    <input type="number" id="stock-shares" placeholder="Number of Shares" required min="1" />
-    <button onclick="simulateBuy()">Simulate Buy</button>
+    <div class="input-group">
+      <input type="text" id="stock-symbol" placeholder="Stock Symbol (e.g. AAPL)" required />
+      <input type="number" id="stock-shares" placeholder="Number of Shares" required min="1" />
+      <button onclick="simulateBuy()">Simulate Buy</button>
+    </div>
 
-    <!-- Portfolio Table -->
-    <table border="1" style="margin-top: 20px;">
+    <table>
       <thead>
         <tr>
           <th>Stock</th>
           <th>Shares</th>
           <th>Price</th>
           <th>Total</th>
+          <th>Date</th>
         </tr>
       </thead>
       <tbody id="stocks-table-body"></tbody>
     </table>
 
-    <!-- Portfolio Value -->
     <p><strong>Total Portfolio Value: $<span id="total-value">0.00</span></strong></p>
   </div>
 
-  <h2>Sign Up</h2>
-  <form id="signup-form">
-    <input type="email" id="signup-email" placeholder="Email" required />
-    <input type="password" id="signup-password" placeholder="Password" required />
-    <button type="submit">Create Account</button>
-  </form>
+  <!-- Dashboard Section -->
+  <div id="dashboard" style="display: none;">
+    <h2>Portfolio Dashboard</h2>
 
-  <h2>Login</h2>
-  <form id="login-form">
-    <input type="email" id="login-email" placeholder="Email" required />
-    <input type="password" id="login-password" placeholder="Password" required />
-    <button type="submit">Log In</button>
-  </form>
+    <div class="dashboard-cards">
+      <div class="card">
+        <h3>Total Value</h3>
+        <p id="dashboard-total-value">$0.00</p>
+      </div>
+      <div class="card">
+        <h3>Largest Holding</h3>
+        <p id="dashboard-largest-holding">N/A</p>
+      </div>
+      <div class="card">
+        <h3>Stocks Owned</h3>
+        <p id="dashboard-stock-count">0</p>
+      </div>
+    </div>
 
-  <!-- Logout Button -->
-  <button id="logout-button" style="display: none;">Log Out</button>
+    <div class="chart-container">
+      <canvas id="portfolio-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- Auth Forms -->
+  <div id="auth-forms">
+    <section>
+      <h2>Sign Up</h2>
+      <form id="signup-form">
+        <input type="email" id="signup-email" placeholder="Email" required />
+        <input type="password" id="signup-password" placeholder="Password" required />
+        <button type="submit">Create Account</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>Login</h2>
+      <form id="login-form">
+        <input type="email" id="login-email" placeholder="Email" required />
+        <input type="password" id="login-password" placeholder="Password" required />
+        <button type="submit">Log In</button>
+      </form>
+    </section>
+
+    <button id="logout-button" style="display: none;">Log Out</button>
+  </div>
 
   <p id="status-message"></p>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
-    import {
-      getAuth,
-      createUserWithEmailAndPassword,
-      signInWithEmailAndPassword,
-      signOut,
-      onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import {
-      getFirestore,
-      collection,
-      addDoc,
-      query,
-      where,
-      getDocs
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDbJphPzvS5nVT2Li_s2MS-hAhztnPdZSs",
-      authDomain: "zinvestment-tracker.firebaseapp.com",
-      projectId: "zinvestment-tracker",
-      storageBucket: "zinvestment-tracker.firebasestorage.app",
-      messagingSenderId: "281888732344",
-      appId: "1:281888732344:web:b67fc42b977d4d15da704d",
-      measurementId: "G-X44KR3M36Q"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        document.getElementById("logout-button").style.display = "inline-block";
-        loadUserPurchases(user.uid);
-      } else {
-        document.getElementById("logout-button").style.display = "none";
-        document.getElementById("stocks-table-body").innerHTML = "";
-        document.getElementById("total-value").innerText = "0.00";
-      }
-    });
-
-    document.getElementById("signup-form").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const email = document.getElementById("signup-email").value;
-      const password = document.getElementById("signup-password").value;
-
-      createUserWithEmailAndPassword(auth, email, password)
-        .then(() => {
-          document.getElementById("status-message").innerText = "Account created! Welcome.";
-        })
-        .catch((error) => {
-          document.getElementById("status-message").innerText = "Error: " + error.message;
-        });
-    });
-
-    document.getElementById("login-form").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const email = document.getElementById("login-email").value;
-      const password = document.getElementById("login-password").value;
-
-      signInWithEmailAndPassword(auth, email, password)
-        .then(() => {
-          document.getElementById("status-message").innerText = "Logged in successfully!";
-        })
-        .catch((error) => {
-          document.getElementById("status-message").innerText = "Error: " + error.message;
-        });
-    });
-
-    document.getElementById("logout-button").addEventListener("click", () => {
-      signOut(auth).then(() => {
-        document.getElementById("status-message").innerText = "Logged out.";
-      });
-    });
-
-    window.simulateBuy = async function () {
-      const user = auth.currentUser;
-      if (!user) {
-        alert("Please log in to simulate a buy.");
-        return;
-      }
-
-      const stockSymbol = document.getElementById("stock-symbol").value.toUpperCase();
-      const stockShares = parseInt(document.getElementById("stock-shares").value);
-      if (!stockSymbol || isNaN(stockShares) || stockShares < 1) {
-        alert("Please enter a valid stock symbol and number of shares.");
-        return;
-      }
-
-      const pricePerShare = 100;
-      const totalCost = pricePerShare * stockShares;
-
-      const stockData = {
-        userId: user.uid,
-        stock: stockSymbol,
-        shares: stockShares,
-        price: pricePerShare,
-        timestamp: new Date()
-      };
-
-      try {
-        await addDoc(collection(db, "purchases"), stockData);
-        document.getElementById("status-message").innerText = `You bought ${stockShares} shares of ${stockSymbol}`;
-        loadUserPurchases(user.uid);
-      } catch (error) {
-        document.getElementById("status-message").innerText = "Error saving purchase.";
-      }
-
-      document.getElementById("stock-symbol").value = "";
-      document.getElementById("stock-shares").value = "";
-    };
-
-    async function loadUserPurchases(uid) {
-      const q = query(collection(db, "purchases"), where("userId", "==", uid));
-      const querySnapshot = await getDocs(q);
-
-      const tbody = document.getElementById("stocks-table-body");
-      tbody.innerHTML = "";
-      let totalValue = 0;
-
-      querySnapshot.forEach((doc) => {
-        const purchase = doc.data();
-        const total = purchase.price * purchase.shares;
-        totalValue += total;
-
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${purchase.stock}</td>
-          <td>${purchase.shares}</td>
-          <td>$${purchase.price}</td>
-          <td>$${total}</td>
-        `;
-        tbody.appendChild(row);
-      });
-
-      document.getElementById("total-value").innerText = totalValue.toFixed(2);
-    }
-  </script>
+  <!-- JavaScript -->
+  <script type="module" src="app.js"></script>
 </body>
 </html>
-
 
